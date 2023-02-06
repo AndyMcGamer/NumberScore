@@ -40,6 +40,11 @@ namespace NumberScore.Classes
                 }
                 outputs[i] = output;
             }
+
+            for (int i = 0; i < nodesOut; i++)
+            {
+                outputs[i] = 1 / (1 + System.Math.Exp(-outputs[i]));
+            }
         }
 
         public void SetData(SimpleLayerData data)

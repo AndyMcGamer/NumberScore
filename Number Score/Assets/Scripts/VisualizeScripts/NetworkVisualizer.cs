@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEngine.GraphicsBuffer;
 
 namespace NumberScore.Graphics
 {
@@ -93,6 +92,7 @@ namespace NumberScore.Graphics
         private void Update()
         {
             if (render) Draw();
+            Texture2D tex = new(512, 512, TextureFormat.RGBA32, false);
         }
 
         private void InitRenderTexture()
@@ -102,7 +102,6 @@ namespace NumberScore.Graphics
                 // Release render texture if we already have one
                 if (_target != null)
                     _target.Release();
-                // Get a render target for Ray Tracing
                 _target = new RenderTexture(textureWidth, textureHeight, 0,
                     RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
                 _target.enableRandomWrite = true;
@@ -200,25 +199,34 @@ namespace NumberScore.Graphics
 
         private void RunCompute()
         {
-            List<Color32> colors = new();
-            for (int i = 0; i < texture.height; i++)
+            Color32[] colors = new Color32[texture.height * texture.width];
+            int height = texture.height;
+            System.Threading.Tasks.Parallel.For(0, colors.Length, (i) =>
             {
-                for (int j = 0; j < texture.width; j++)
-                {
-                    double[] inputs = { i/64d, j/64d };
-                    if (network.Classify(inputs) == 0)
-                    {
-                        
-                        colors.Add(badColor);
-                    }
-                    else
-                    {
-                        
-                        colors.Add(goodColor);
-                    }
-                }
-            }
-            texture.SetPixels32(colors.ToArray());
+                double y = (i / height) / 64d;
+                double x = (i % height) / 64d;
+                colors[i] = network.Classify(new double[] { y, x }) == 0 ? badColor : goodColor;
+            });
+            //List<Color32> colors = new();
+            //for (int i = 0; i < texture.height; i++)
+            //{
+            //    for (int j = 0; j < texture.width; j++)
+            //    {
+            //        double[] inputs = { i/64d, j/64d };
+            //        if (network.Classify(inputs) == 0)
+            //        {
+
+            //            colors.Add(badColor);
+            //        }
+            //        else
+            //        {
+
+            //            colors.Add(goodColor);
+            //        }
+            //    }
+            //}
+            //texture.SetPixels32(colors.ToArray());
+            texture.SetPixels32(colors);
             texture.Apply();
             cpuMaterial.SetTexture("_MainTex", texture);
             image.material = cpuMaterial;

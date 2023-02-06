@@ -15,18 +15,18 @@ StructuredBuffer<float> Weights;
 StructuredBuffer<float> Biases;
 int numLayers;
 
-float2 CalcOutputs(float2 inputs) {
+float4 CalcOutputs(float4 inputs) {
     int counter = 0;
     int wCounter = 0;
     for (int i = 0; i < numLayers; i++)
     {
-        float2 outputs = float2(0,0);
+        float4 outputs = float4(0,0,0,0);
         [unroll(2)] for (int j = 0; j < layers[i].NodeOut; j++)
         {
             float output = Biases[counter];
             for (int k = 0; k < layers[i].NodeIn; k++)
             {
-                output += inputs[k] * Weights[wCounter];
+                output += inputs[j] * Weights[wCounter];
                 wCounter++;
             }
             outputs[j] = output;
@@ -37,8 +37,8 @@ float2 CalcOutputs(float2 inputs) {
     return inputs;
 }
 
-float4 Classify(float2 inputs) {
-    float2 output = CalcOutputs(inputs);
+float4 Classify(float4 inputs) {
+    float4 output = CalcOutputs(inputs);
     if (output[0] >= output[1]) {
         return float4(1,0,0,150.0/255.0);
     }
@@ -50,7 +50,5 @@ float4 Classify(float2 inputs) {
 [numthreads(8,8,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    // TODO: insert actual code here!
-
-    Result[id.xy] = Classify(float2(id.x/64.0,id.y/64.0));
+    Result[id.xy] = Classify(float4(id.x/64.0,id.y/64.0, 0, 0));
 }
